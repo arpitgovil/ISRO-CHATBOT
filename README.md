@@ -23,11 +23,8 @@ This assistant is powered by natural language processing, styled with a stunning
 
 ---
 
-## 🔗 Live Preview (optional)
-
+## 🔗 Live Preview 
 👉 https://isro-chatbot.vercel.app/
-
----
 
 > 🛠️ Built with love for science & space  
 > 🌠 Inspired by ISRO's missions to make data more accessible  
