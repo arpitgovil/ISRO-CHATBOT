@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOSDAC AI Assistant</title>
+    <meta name="description" content="Meteorological & Oceanographic Satellite Data Archival Centre AI Assistant">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    colors: {
+                        cosmic: {
+                            blue: 'hsl(200, 100%, 50%)',
+                            purple: 'hsl(258, 90%, 66%)',
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'twinkle': 'twinkle 4s infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background: hsl(218, 27%, 8%);
+            color: hsl(210, 40%, 98%);
+            background-image: radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(0, 191, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.05) 0%, transparent 50%);
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+        }
+        
+        .cosmic-glow {
+            box-shadow: 0 0 20px rgba(0, 191, 255, 0.3);
+        }
+        
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        @keyframes twinkle {
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+        
+        .stars {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 4s infinite;
+        }
+        
+        .sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar.open {
+            transform: translateX(0);
+        }
+        
+        @media (min-width: 768px) {
+            .sidebar {
+                transform: translateX(0);
+            }
+        }
+        
+        .typing-dots div {
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        
+        .typing-dots div:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        
+        .typing-dots div:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        
+        @keyframes bounce {
+            0%,
+            80%,
+            100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body class="font-sans">
+    <!-- Stars Background -->
+    <div class="stars" id="stars"></div>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar fixed left-0 top-0 h-full w-72 glass-panel border-r border-white/10 z-50 md:z-10">
+        <div class="p-4">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                    <span class="text-white font-bold text-sm">M</span>
+                </div>
+                <div>
+                    <h2 class="font-semibold text-sm">MOSDAC AI</h2>
+                    <p class="text-xs text-gray-400">Space Assistant</p>
+                </div>
+            </div>
+        </div>
+
+        <nav class="px-4">
+            <div class="mb-4">
+                <h3 class="text-sm font-medium text-blue-400 mb-2">Navigation</h3>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="#" onclick="showPage('chat')" class="nav-link flex items-center space-x-3 p-3 rounded-r-xl hover:bg-white/5 hover:text-blue-400 transition-all duration-200" data-page="chat">
+                            <i data-lucide="message-circle" class="w-5 h-5"></i>
+                            <div><span class="font-medium text-sm">Chat Assistant</span>
+                                <p class="text-xs text-gray-400 mt-0.5">AI conversation interface</p>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showPage('satellite')" class="nav-link flex items-center space-x-3 p-3 rounded-r-xl hover:bg-white/5 hover:text-blue-400 transition-all duration-200" data-page="satellite">
+                            <i data-lucide="satellite" class="w-5 h-5"></i>
+                            <div><span class="font-medium text-sm">Satellite Data</span>
+                                <p class="text-xs text-gray-400 mt-0.5">Browse satellite imagery</p>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showPage('weather')" class="nav-link flex items-center space-x-3 p-3 rounded-r-xl hover:bg-white/5 hover:text-blue-400 transition-all duration-200" data-page="weather">
+                            <i data-lucide="cloud" class="w-5 h-5"></i>
+                            <div><span class="font-medium text-sm">Weather Services</span>
+                                <p class="text-xs text-gray-400 mt-0.5">Weather forecasts</p>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showPage('missions')" class="nav-link flex items-center space-x-3 p-3 rounded-r-xl hover:bg-white/5 hover:text-blue-400 transition-all duration-200" data-page="missions">
+                            <i data-lucide="rocket" class="w-5 h-5"></i>
+                            <div><span class="font-medium text-sm">Mission Updates</span>
+                                <p class="text-xs text-gray-400 mt-0.5">ISRO mission status</p>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showPage('docs')" class="nav-link flex items-center space-x-3 p-3 rounded-r-xl hover:bg-white/5 hover:text-blue-400 transition-all duration-200" data-page="docs">
+                            <i data-lucide="book" class="w-5 h-5"></i>
+                            <div><span class="font-medium text-sm">Documentation</span>
+                                <p class="text-xs text-gray-400 mt-0.5">Technical guides</p>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" onclick="showPage('history')" class="nav-link flex items-center space-x-3 p-3 rounded-r-xl hover:bg-white/5 hover:text-blue-400 transition-all duration-200" data-page="history">
+                            <i data-lucide="history" class="w-5 h-5"></i>
+                            <div><span class="font-medium text-sm">Recent Queries</span>
+                                <p class="text-xs text-gray-400 mt-0.5">Your query history</p>
+                            </div>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <div class="mt-auto p-4">
+            <div class="glass-panel p-3 text-center">
+                <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mx-auto mb-2 flex items-center justify-center">
+                    <span class="text-white font-bold">🚀</span>
+                </div>
+                <p class="text-xs text-gray-400">Powered by ISRO Technology</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="md:ml-72 min-h-screen flex flex-col">
+        <!-- Top Navbar -->
+        <header class="glass-panel border-b border-white/10 px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <button id="sidebarToggle" class="text-blue-400 hover:text-purple-400 transition-colors md:hidden">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center cosmic-glow">
+                        <span class="text-white font-bold text-lg">🛰️</span>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                            MOSDAC AI Assistant
+                        </h1>
+                        <p class="text-xs text-gray-400">
+                            Meteorological & Oceanographic Satellite Data Archival Centre
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <div class="hidden md:flex items-center space-x-1">
+                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span class="text-xs text-gray-400">System Online</span>
+                </div>
+
+                <button class="glass-panel border-white/20 hover:border-blue-500/50 hover:bg-blue-500/10 transition-all duration-200 px-3 py-1 text-sm">
+                    Help
+                </button>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <main class="flex-1">
+            <!-- Chat Page -->
+            <div id="chatPage" class="page h-full flex flex-col">
+                <!-- Messages Area -->
+                <div id="messagesArea" class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div class="flex justify-start animate-float">
+                        <div class="glass-panel p-4 max-w-md lg:max-w-lg bg-white/5 border-white/10">
+                            <div class="space-y-2">
+                                <p class="text-sm leading-relaxed">Welcome to MOSDAC AI Assistant! I can help you with satellite data, weather information, and space exploration queries. How can I assist you today?</p>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs text-gray-400" id="welcomeTime"></span>
+                                    <div class="flex items-center space-x-1">
+                                        <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
+                                        <span class="text-xs text-blue-400 font-medium">MOSDAC AI</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Suggestions -->
+                <div id="suggestions" class="p-4">
+                    <h3 class="text-sm font-medium text-gray-400 mb-3">Quick Actions</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <button onclick="selectSuggestion(this)" class="glass-panel border-white/20 hover:border-blue-500/50 hover:bg-blue-500/10 text-left p-3 transition-all duration-200 hover:cosmic-glow">
+                            <span class="text-sm text-gray-400 mr-2">→</span>
+                            Show me latest satellite imagery of India
+                        </button>
+                        <button onclick="selectSuggestion(this)" class="glass-panel border-white/20 hover:border-blue-500/50 hover:bg-blue-500/10 text-left p-3 transition-all duration-200 hover:cosmic-glow">
+                            <span class="text-sm text-gray-400 mr-2">→</span>
+                            Weather forecast for Chennai
+                        </button>
+                        <button onclick="selectSuggestion(this)" class="glass-panel border-white/20 hover:border-blue-500/50 hover:bg-blue-500/10 text-left p-3 transition-all duration-200 hover:cosmic-glow">
+                            <span class="text-sm text-gray-400 mr-2">→</span>
+                            ISRO mission status updates
+                        </button>
+                        <button onclick="selectSuggestion(this)" class="glass-panel border-white/20 hover:border-blue-500/50 hover:bg-blue-500/10 text-left p-3 transition-all duration-200 hover:cosmic-glow">
+                            <span class="text-sm text-gray-400 mr-2">→</span>
+                            Cyclone tracking information
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input Area -->
+                <div class="p-4 glass-panel m-4 rounded-2xl">
+                    <div class="flex space-x-2 items-end">
+                        <div class="flex-1 relative">
+                            <input id="messageInput" type="text" placeholder="Ask about satellite data, weather, or space missions..." class="w-full bg-gray-800/50 border border-white/20 rounded-xl px-4 py-3 pr-20 focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all duration-200 resize-none"
+                            />
+                            <button class="absolute right-12 top-1/2 -translate-y-1/2 text-gray-400 hover:text-blue-400 transition-colors">
+                                <i data-lucide="mic" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                        <button id="sendButton" onclick="sendMessage()" class="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 rounded-xl px-6 py-3 transition-all duration-200 cosmic-glow">
+                            <i data-lucide="send" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other Pages -->
+            <div id="satellitePage" class="page hidden p-6">
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h1 class="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                        Satellite Data Catalogue
+                    </h1>
+                    <p class="text-gray-400 mb-6">Browse and access satellite imagery and data from various ISRO missions.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="glass-panel p-4 rounded-xl hover:bg-white/10 transition-all duration-200 cursor-pointer">
+                            <h3 class="font-semibold text-blue-400 mb-2">INSAT-3D</h3>
+                            <p class="text-sm text-gray-400">Access data and imagery</p>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl hover:bg-white/10 transition-all duration-200 cursor-pointer">
+                            <h3 class="font-semibold text-blue-400 mb-2">Oceansat-2</h3>
+                            <p class="text-sm text-gray-400">Access data and imagery</p>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl hover:bg-white/10 transition-all duration-200 cursor-pointer">
+                            <h3 class="font-semibold text-blue-400 mb-2">SCATSAT-1</h3>
+                            <p class="text-sm text-gray-400">Access data and imagery</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="weatherPage" class="page hidden p-6">
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h1 class="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                        Weather Services
+                    </h1>
+                    <p class="text-gray-400 mb-6">Access weather forecasts, analysis, and meteorological data.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-panel p-4 rounded-xl">
+                            <h3 class="font-semibold text-blue-400 mb-2">Current Weather</h3>
+                            <p class="text-sm text-gray-400">Real-time weather conditions</p>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl">
+                            <h3 class="font-semibold text-purple-400 mb-2">Forecasts</h3>
+                            <p class="text-sm text-gray-400">Extended weather predictions</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="missionsPage" class="page hidden p-6">
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h1 class="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                        Mission Updates
+                    </h1>
+                    <p class="text-gray-400 mb-6">Latest updates on ISRO missions and space exploration activities.</p>
+
+                    <div class="space-y-4">
+                        <div class="glass-panel p-4 rounded-xl">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-semibold text-blue-400">Chandrayaan-3</h3>
+                                    <p class="text-sm text-gray-400">Lunar exploration mission</p>
+                                </div>
+                                <span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">Active</span>
+                            </div>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-semibold text-blue-400">Aditya-L1</h3>
+                                    <p class="text-sm text-gray-400">Solar observation mission</p>
+                                </div>
+                                <span class="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-400">Active</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="docsPage" class="page hidden p-6">
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h1 class="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                        Documentation
+                    </h1>
+                    <p class="text-gray-400 mb-6">Technical guides, manuals, and API documentation.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="glass-panel p-4 rounded-xl hover:bg-white/10 transition-all duration-200 cursor-pointer">
+                            <h3 class="font-semibold text-blue-400 mb-1">API Reference</h3>
+                            <p class="text-sm text-gray-400">Access documentation</p>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl hover:bg-white/10 transition-all duration-200 cursor-pointer">
+                            <h3 class="font-semibold text-blue-400 mb-1">User Guides</h3>
+                            <p class="text-sm text-gray-400">Access documentation</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="historyPage" class="page hidden p-6">
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h1 class="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                        Query History
+                    </h1>
+                    <p class="text-gray-400 mb-6">Your recent queries and interactions with MOSDAC AI Assistant.</p>
+
+                    <div class="space-y-3">
+                        <div class="glass-panel p-3 rounded-xl hover:bg-white/10 transition-all duration-200 cursor-pointer">
+                            <p class="text-sm">Latest satellite imagery of India</p>
+                            <p class="text-xs text-gray-400 mt-1">2 hours ago</p>
+                        </div>
+                        <div class="glass-panel p-3 rounded-xl hover:bg-white/10 transition-all duration-200 cursor-pointer">
+                            <p class="text-sm">Weather forecast for Chennai</p>
+                            <p class="text-xs text-gray-400 mt-1">5 hours ago</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Create stars background
+        function createStars() {
+            const starsContainer = document.getElementById('stars');
+            const numberOfStars = 100;
+
+            for (let i = 0; i < numberOfStars; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+
+                const size = Math.random() * 2 + 1;
+                star.style.width = size + 'px';
+                star.style.height = size + 'px';
+
+                star.style.animationDelay = Math.random() * 4 + 's';
+
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // Initialize welcome time
+        function initializeWelcomeTime() {
+            const welcomeTime = document.getElementById('welcomeTime');
+            const now = new Date();
+            welcomeTime.textContent = now.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Sidebar functionality
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            sidebarOverlay.classList.toggle('hidden');
+        }
+
+        sidebarToggle.addEventListener('click', toggleSidebar);
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+
+        // Page navigation
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.add('hidden');
+            });
+
+            // Show selected page
+            document.getElementById(pageId + 'Page').classList.remove('hidden');
+
+            // Update active nav link
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('bg-blue-500/20', 'text-blue-400', 'border-l-2', 'border-blue-400');
+            });
+
+            const activeLink = document.querySelector(`[data-page="${pageId}"]`);
+            if (activeLink) {
+                activeLink.classList.add('bg-blue-500/20', 'text-blue-400', 'border-l-2', 'border-blue-400');
+            }
+
+            // Close sidebar on mobile
+            if (window.innerWidth < 768) {
+                toggleSidebar();
+            }
+        }
+
+        // Chat functionality
+        let isTyping = false;
+        let messageCount = 1;
+
+        function selectSuggestion(button) {
+            const text = button.textContent.replace('→', '').trim();
+            document.getElementById('messageInput').value = text;
+            sendMessage();
+        }
+
+        function addMessage(text, isUser = false) {
+            const messagesArea = document.getElementById('messagesArea');
+            const messageDiv = document.createElement('div');
+
+            messageDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} animate-float`;
+
+            const time = new Date().toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            messageDiv.innerHTML = `
+                <div class="glass-panel p-4 max-w-md lg:max-w-lg ${
+                    isUser 
+                        ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border-blue-500/30' 
+                        : 'bg-white/5 border-white/10'
+                }">
+                    <div class="space-y-2">
+                        <p class="text-sm leading-relaxed">${text}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-400">${time}</span>
+                            ${!isUser ? `
+                                <div class="flex items-center space-x-1">
+                                    <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
+                                    <span class="text-xs text-blue-400 font-medium">MOSDAC AI</span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            messagesArea.appendChild(messageDiv);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+            
+            // Hide suggestions after first message
+            if (messageCount > 1) {
+                document.getElementById('suggestions').style.display = 'none';
+            }
+        }
+        
+        function showTypingIndicator() {
+            const messagesArea = document.getElementById('messagesArea');
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typingIndicator';
+            typingDiv.className = 'flex justify-start';
+            
+            typingDiv.innerHTML = `
+                <div class="glass-panel p-4 max-w-xs">
+                    <div class="typing-dots flex space-x-1">
+                        <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                        <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                        <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                    </div>
+                </div>
+            `;
+            
+            messagesArea.appendChild(typingDiv);
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+        
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+        
+        function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const text = input.value.trim();
+    if (!text || isTyping) return;
+
+    addMessage(text, true); // Show user's message
+    input.value = '';
+    messageCount++;
+    isTyping = true;
+    showTypingIndicator(); // Show typing dots
+
+    // 🔍 Check for greetings
+    const greetings = ['hi', 'hello', 'hey', 'namaste', 'good morning', 'good afternoon', 'good evening'];
+    const lowerText = text.toLowerCase();
+
+    if (greetings.some(greet => lowerText.includes(greet))) {
+      setTimeout(() => {
+        removeTypingIndicator();
+        addMessage("👋 Hello! I'm your MOSDAC AI Assistant. I can help you with satellite data, weather insights, and ISRO mission updates. How can I assist you today?");
+        isTyping = false;
+      }, 1000);
+      return;
+    }
+
+    // 🌐 Proceed with real API call
+    fetch('http://localhost:8000/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: text })
+    })
+    .then(res => res.json())
+    .then(data => {
+      removeTypingIndicator();
+      addMessage(data.answer);
+      isTyping = false;
+    })
+    .catch(err => {
+      removeTypingIndicator();
+      addMessage("⚠️ Sorry, I couldn’t reach the AI assistant. Please try again later.");
+      console.error(err);
+      isTyping = false;
+            }, 2000);
+        }
+        
+        // Enter key to send message
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createStars();
+            initializeWelcomeTime();
+            showPage('chat'); // Show chat page by default
+        });
+    </script>
+</body>
+
+</html>
